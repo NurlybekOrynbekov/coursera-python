@@ -37,7 +37,7 @@ def run(host, port):
         client1.put("k1", 0.35, timestamp=3)
         client2.put("k2", 30, timestamp=4)
         client1.put("k2", 40, timestamp=5)
-        client1.put("k2", 40, timestamp=5)
+        # client1.put("k2", 40, timestamp=5)
     except Exception as err:
         print(f"Ошибка вызова client.put(...) {err.__class__}: {err}")
         sys.exit(1)

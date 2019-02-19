@@ -1,38 +1,55 @@
 import asyncio
 
 
+class WrongCommand(Exception):
+    pass
+
+
 class ClientServerProtocol(asyncio.Protocol):
+
+    info = {}
+
     def connection_made(self, transport):
         self.transport = transport
-        self.dict = dict()
 
     def data_received(self, data):
-        resp = self.process_data(data.decode())
-        self.transport.write(resp.encode())
+        try:
+            resp = self.decode_command(data.decode())
+        except WrongCommand:
+            resp = 'error\nwrong command\n\n'
+        finally:
+            self.transport.write(resp.encode())
 
-    def process_data(self, data):
+    def decode_command(self, data):
         if 'put' in data:
             command, key, val, time = data.split()
-            if key not in self.dict:
-                self.dict[key] = []
-            self.dict[key].append(f'{val} {time}')
-            return 'ok\n\n'
+            result = self.put(key, val, time)
+            return result
         elif 'get' in data:
-            responce = 'ok\n'
             command, key = data.split()
-            if key == '*':
-                for x in self.dict:
-                    for val in self.dict[x]:
-                        responce += f'{x} {val}\n'
-            elif key in self.dict:
-                for val in self.dict[key]:
-                    responce += f'{key} {val}\n'
-            else:
-                responce += '\n'
-            print(data + ' => ' + responce)
-            return responce
+            return self.get(key)
         else:
-            return 'error\nwrong command\n\n'
+            raise WrongCommand
+
+    def get(self, key):
+        responce = 'ok\n'
+        if key == '*':
+            for x in self.info:
+                for val in self.info[x]:
+                    responce += f'{x} {val}\n'
+        elif key in self.info:
+            for val in self.info[key]:
+                responce += f'{key} {val}\n'
+        responce += '\n'
+        return responce
+
+    def put(self, key, val, time):
+        if key not in self.info:
+            self.info[key] = [f'{val} {time}']
+        else:
+            self.info[key].append(f'{val} {time}')
+        print(self.info)
+        return 'ok\n\n'
 
 
 def run_server(host, port):
